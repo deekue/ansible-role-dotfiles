@@ -8,24 +8,27 @@
   become: false
 
 - name: Ensure all configured dotfiles are links.
-  command: "ls -F {{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
+  stat:
+    path: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
+    get_checksum: no
   register: existing_dotfile_info
-  failed_when: false
-  check_mode: false
-  changed_when: false
+  #failed_when: false
+  #check_mode: false
+  #changed_when: false
   with_items: "{{ dotfiles_files }}"
 
 - name: Remove existing dotfiles file if a replacement is being linked.
   file:
-    path: "{{ dotfiles_home }}/{{ dotfiles_files[item.0] }}"
+    path: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ dotfiles_files[item.0] }}"
     state: absent
-  when: "'@' not in item.1.stdout"
-  with_indexed_items: "{{ existing_dotfile_info.results }}"
+  when: item.1.stat.islnk is defined and item.1.stat.islnk == False
+  with_indexed_items: "{{ existing_dotfile_info }}"
 
 - name: Link dotfiles into home folder.
   file:
     src: "{{ dotfiles_repo_local_destination }}/{{ item }}"
     dest: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
     state: link
+    force: "{{ dotfiles_force_links | default(false) }}"
   become: false
   with_items: "{{ dotfiles_files }}"
