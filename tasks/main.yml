@@ -8,7 +8,7 @@
   become: false
 
 - name: Ensure all configured dotfiles are links.
-  command: "ls -F {{ dotfiles_home }}/{{ item }}"
+  command: "ls -F {{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
   register: existing_dotfile_info
   failed_when: false
   check_mode: false
@@ -25,7 +25,7 @@
 - name: Link dotfiles into home folder.
   file:
     src: "{{ dotfiles_repo_local_destination }}/{{ item }}"
-    dest: "{{ dotfiles_home }}/{{ item }}"
+    dest: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
     state: link
   become: false
   with_items: "{{ dotfiles_files }}"
