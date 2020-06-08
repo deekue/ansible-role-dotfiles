@@ -12,17 +12,24 @@
     path: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
     get_checksum: no
   register: existing_dotfile_info
-  #failed_when: false
-  #check_mode: false
-  #changed_when: false
   with_items: "{{ dotfiles_files }}"
+
+- name: Backup existing dotfiles file if a replacement is being linked.
+  copy:
+    src: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ dotfiles_files[item.0] }}"
+    dest: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ dotfiles_files[item.0] }}.orig"
+    remote_src: yes
+  when:
+    - dotfiles_backup_existing|default(false)|bool
+    - item.1.stat.islnk is defined and item.1.stat.islnk == False
+  with_indexed_items: "{{ existing_dotfile_info.results }}"
 
 - name: Remove existing dotfiles file if a replacement is being linked.
   file:
     path: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ dotfiles_files[item.0] }}"
     state: absent
   when: item.1.stat.islnk is defined and item.1.stat.islnk == False
-  with_indexed_items: "{{ existing_dotfile_info }}"
+  with_indexed_items: "{{ existing_dotfile_info.results }}"
 
 - name: Link dotfiles into home folder.
   file:
