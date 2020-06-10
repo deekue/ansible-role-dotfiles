@@ -13,30 +13,34 @@
     path: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
     get_checksum: no
   register: existing_dotfile_info
-  with_items: "{{ dotfiles_files }}"
+  loop: "{{ dotfiles_files }}"
 
 - name: Backup existing dotfiles file if a replacement is being linked.
   copy:
-    src: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ dotfiles_files[item.0] }}"
-    dest: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ dotfiles_files[item.0] }}.orig"
+    src: "{{ item.stat.path }}"
+    dest: "{{ item.stat.path }}.orig"
     remote_src: yes
   when:
     - dotfiles_backup_existing|default(false)|bool
-    - item.1.stat.islnk is defined and item.1.stat.islnk == False
-  with_indexed_items: "{{ existing_dotfile_info.results }}"
+    - item.stat.islnk is defined and item.stat.islnk == False
+  loop: "{{ existing_dotfile_info.results|flatten(levels=1) }}"
+  loop_control:
+    label: "{{ item.stat.path }}"
 
 - name: Remove existing dotfiles file if a replacement is being linked.
   file:
-    path: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ dotfiles_files[item.0] }}"
+    path: "{{ item.stat.path }}"
     state: absent
-  when: item.1.stat.islnk is defined and item.1.stat.islnk == False
-  with_indexed_items: "{{ existing_dotfile_info.results }}"
+  when: item.stat.islnk is defined and item.stat.islnk == False
+  loop: "{{ existing_dotfile_info.results|flatten(levels=1) }}"
+  loop_control:
+    label: "{{ item.stat.path }}"
 
 - name: Link dotfiles into home folder.
   file:
     src: "{{ dotfiles_repo_local_destination }}/{{ item }}"
     dest: "{{ dotfiles_home }}/{{ dotfiles_prefix }}{{ item }}"
     state: link
-    force: "{{ dotfiles_force_links | default(false) }}"
+    force: "{{ dotfiles_force_links|default(false) }}"
   become: false
-  with_items: "{{ dotfiles_files }}"
+  loop: "{{ dotfiles_files }}"
