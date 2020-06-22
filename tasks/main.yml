@@ -24,8 +24,6 @@
     - dotfiles_backup_existing|default(false)|bool
     - item.stat.islnk is defined and item.stat.islnk == False
   loop: "{{ existing_dotfile_info.results|flatten(levels=1) }}"
-  loop_control:
-    label: "{{ item.stat.path }}"
 
 - name: Remove existing dotfiles file if a replacement is being linked.
   file:
@@ -33,8 +31,6 @@
     state: absent
   when: item.stat.islnk is defined and item.stat.islnk == False
   loop: "{{ existing_dotfile_info.results|flatten(levels=1) }}"
-  loop_control:
-    label: "{{ item.stat.path }}"
 
 - name: Link dotfiles into home folder.
   file:
